@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Pyramid War Song - Large Text</title>
+    <style>
+        :root { 
+            /* 讓正面卡片背景更白，文字對比更強 */
+            --card-bg: #ffffff; 
+            --card-back-bg: #2c3e50;
+            --stripe-color: rgba(255, 255, 255, 0.15);
+            --gold: #d4af37; 
+            --red: #d63031; /* 更鮮明的紅色 */
+            --black: #000000; /* 純黑 */
+            --dark-bg: #121212;
+        }
+        
+        body { background: var(--dark-bg); color: white; font-family: system-ui, sans-serif; text-align: center; margin: 0; padding: 0; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; }
+        #game-header { padding: 10px 15px; background: #1a1a1a; border-bottom: 2px solid var(--gold); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; z-index: 5000; }
+        .dropbtn { background: none; border: none; font-size: 26px; cursor: pointer; color: #7cfc00; }
+        .dropdown { position: relative; }
+        .dropdown-content { display: none; position: absolute; right: 0; background: #2c2c2c; min-width: 160px; z-index: 9999; border: 2px solid var(--gold); }
+        .dropdown-content a { color: #fff; padding: 12px 16px; text-decoration: none; display: block; border-bottom: 1px solid #444; text-align: left; }
+        .show { display: block; }
+
+        #pyramid-container { flex-grow: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        /* 稍微拉寬舞台，給大卡片更多空間 */
+        #card-stage { position: absolute; width: 620px; height: 560px; transform-origin: center center; }
+
+        /* 卡片尺寸微調，優化觸控與視覺 */
+        .card { 
+            position: absolute; width: 76px; height: 112px; background: var(--card-bg); 
+            border-radius: 10px; border: 2px solid #666; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; box-sizing: border-box; cursor: pointer; 
+            box-shadow: 2px 5px 12px rgba(0,0,0,0.8);
+        }
+
+        /* 核心優化：特大字體排版 */
+        .card-main-info {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            line-height: 0.9;
+        }
+        .card-num { font-size: 2.2rem; font-weight: 900; } /* 巨型數字 */
+        .card-icon { font-size: 1.8rem; margin-top: -2px; } /* 巨型花色 */
+
+        .card.black { color: var(--black); }
+        .card.red { color: var(--red); }
+
+        /* 暗牌斜紋：保持清晰辨識度 */
+        .card.back { 
+            background: var(--card-back-bg);
+            background-image: repeating-linear-gradient(45deg, var(--stripe-color) 0, var(--stripe-color) 12px, transparent 12px, transparent 24px);
+            border: 2px solid #000; box-shadow: 2px 2px 6px rgba(0,0,0,0.5);
+        }
+
+        .card.selected { transform: scale(1.1) translateY(-15px); border: 4px solid var(--gold); z-index: 2500 !important; box-shadow: 0 0 25px var(--gold); }
+        
+        #footer { background: #1a1a1a; flex-shrink: 0; padding: 10px 15px 75px 15px; border-top: 1px solid #333; }
+        #controls { display: flex; justify-content: space-around; align-items: flex-end; max-width: 500px; margin: 0 auto; }
+        #msg { height: 25px; margin-bottom: 10px; color: var(--gold); font-size: 1.2rem; font-weight: bold; }
+        .pile { width: 78px; height: 114px; border: 2px dashed #555; border-radius: 10px; background: rgba(0,0,0,0.5); position: relative; }
+        button { padding: 14px 28px; background: var(--gold); border: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 0 #967a27; }
+
+        #modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; }
+        .modal-content { background: #222; padding: 25px; border: 2px solid var(--gold); width: 85%; border-radius: 12px; }
+    </style>
+</head>
+<body>
+
+    <div id="game-header">
+        <div style="text-align: left;">
+            <div style="font-size: 1.1rem; color: var(--gold); font-weight: bold;">Pyramid War Song</div>
+            <div style="font-size: 0.85rem;">翻整: <span id="cycles">3</span> | 殘兵: <span id="rem">0</span></div>
+        </div>
+        <div class="dropdown">
+            <button onclick="toggleMenu()" class="dropbtn">★</button>
+            <div id="myDropdown" class="dropdown-content">
+                <a href="#" onclick="showHelp()">📜 遊戲說明</a>
+                <a href="#" onclick="changeFormation(1)">🔺 經典陣型 (28)</a>
+                <a href="#" onclick="changeFormation(2)">🔥 八卦陣型 (36)</a>
+                <a href="#" onclick="changeFormation(3)">🏰 正方伏魔</a>
+                <a href="#" onclick="changeFormation(4)">🔳 逆方大陣</a>
+                <a href="#" onclick="changeFormation(5)">⚔️ 雙龍出海</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="pyramid-container"><div id="card-stage"></div></div>
+
+    <div id="footer">
+        <div id="msg">軍令：請配對湊成 13</div>
+        <div id="controls">
+            <div class="pile-box"><div id="stock" class="pile" onclick="drawCard()"></div><div style="font-size:0.8rem; color:#aaa; margin-top:5px; font-weight:bold;">底牌庫</div></div>
+            <div class="pile-box"><div id="waste" class="pile"></div><div style="font-size:0.8rem; color:#aaa; margin-top:5px; font-weight:bold;">廢牌區</div></div>
+            <button onclick="resetGame()">重新布陣</button>
+        </div>
+    </div>
+
+    <div id="modal" onclick="closeHelp()"><div class="modal-content" onclick="event.stopPropagation()">
+        <h3 style="color:var(--gold); margin-top:0;">📜 軍令說明</h3>
+        <p style="text-align:left; font-size:0.95rem; line-height: 1.6;">湊成 13 即殲敵。K 須雙 K 配對。<br>專為大字體優化，看清數字，旗開得勝！</p>
+        <button onclick="closeHelp()" style="width:100%; padding:12px; background:var(--gold); border:none; font-weight:bold;">遵命！</button>
+    </div></div>
+
+<script>
+    const suits = ['♠', '♥', '♦', '♣'], names = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+    let deck = [], pyramid = [], waste = [], stock = [], selectedNext = null, cyclesLeft = 3, currentFormation = 1;
+
+    function toggleMenu() { document.getElementById("myDropdown").classList.toggle("show"); }
+    window.onclick = (e) => { if (!e.target.matches('.dropbtn')) document.getElementById("myDropdown").classList.remove("show"); }
+    function showHelp() { document.getElementById("modal").style.display = "flex"; }
+    function closeHelp() { document.getElementById("modal").style.display = "none"; }
+    function changeFormation(f) { currentFormation = f; resetGame(); toggleMenu(); }
+
+    function resizeGame() {
+        const container = document.getElementById('pyramid-container'), stage = document.getElementById('card-stage');
+        const scale = Math.min((container.offsetWidth - 20) / 620, (container.offsetHeight - 20) / 560);
+        stage.style.transform = `scale(${scale})`;
+    }
+    window.addEventListener('resize', resizeGame);
+
+    function initDeck() {
+        deck = [];
+        suits.forEach(s => names.forEach(n => {
+            let v = (n === 'A')?1:(n === 'J')?11:(n === 'Q')?12:(n === 'K')?13:parseInt(n);
+            deck.push({ suit: s, name: n, val: v, color: (s === '♥'||s === '♦')?'red':'black' });
+        }));
+        deck.sort(() => Math.random() - 0.5);
+    }
+
+    function createCardUI(card, x, y, isPyramid, isBack, z) {
+        const div = document.createElement('div');
+        div.className = `card ${card.color} ${isBack ? 'back' : ''}`;
+        div.style.zIndex = z;
+        
+        // 核心修正：只保留正中央的特大核心訊息
+        if (!isBack) {
+            div.innerHTML = `
+                <div class="card-main-info">
+                    <div class="card-num">${card.name}</div>
+                    <div class="card-icon">${card.suit}</div>
+                </div>
+            `;
+        }
+        if (isPyramid) { div.style.left = `${x}px`; div.style.top = `${y}px`; div.dataset.id = card.id; }
+        div.onclick = () => selectCard(card, div, isBack);
+        return div;
+    }
+
+    function resetGame() {
+        initDeck(); waste = []; cyclesLeft = 3; selectedNext = null; pyramid = [];
+        let count = 0;
+        if (currentFormation <= 2) {
+            let layers = (currentFormation === 1) ? 7 : 8;
+            for (let i = 0; i < layers; i++) for (let j = 0; j <= i; j++) {
+                let c = deck[count++]; c.id = `tri-${i}-${j}`; c.row = i; c.col = j; pyramid.push(c);
+            }
+        } else if (currentFormation === 3) { 
+            for (let layer = 0; layer < 4; layer++) {
+                let size = 4 - layer;
+                for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
+                    let card = deck[count++];
+                    card.id = `sq1-${layer}-${r}-${c}`; card.layer = layer; card.r = r; card.c = c; pyramid.push(card);
+                }
+            }
+        } else if (currentFormation === 4) { 
+            for (let layer = 0; layer < 4; layer++) {
+                let size = layer + 1;
+                for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
+                    let card = deck[count++];
+                    card.id = `sq2-${layer}-${r}-${c}`; card.layer = layer; card.r = r; card.c = c; pyramid.push(card);
+                }
+            }
+        } else if (currentFormation === 5) { 
+             for(let r=0; r<2; r++) for(let c=0; c<2; c++) {
+                 let card = deck[count++]; card.id = `c-${r}-${c}`; card.type='core'; card.r=r; card.c=c; pyramid.push(card);
+             }
+             for(let side of [-1, 1]) {
+                 for(let i=0; i<3; i++) for(let j=0; j<=i; j++) {
+                     let card = deck[count++]; card.id = `s-${side}-${i}-${j}`; card.type='wing'; card.side=side; card.row=i; card.col=j; pyramid.push(card);
+                 }
+             }
+        }
+        stock = deck.slice(count);
+        render();
+    }
+
+    function render() {
+        const stage = document.getElementById('card-stage'); stage.innerHTML = '';
+        pyramid.forEach(c => {
+            let isLocked = false, x, y, z = 0;
+            // 稍微調大一點點間距，配合稍微放大的卡片
+            if (currentFormation <= 2) {
+                let rowWidth = c.row * 86; x = 300 - (rowWidth/2) + (c.col*86) - 38; y = 30 + c.row * 58; z = c.row;
+                isLocked = pyramid.some(other => other.row === c.row+1 && (other.col === c.col || other.col === c.col+1));
+            } else if (currentFormation === 3) {
+                let offset = (c.layer) * 25; x = 300 - (c.layer * 42) + (c.c * 84) - 38; y = 80 + (c.r * 84) + (c.layer * 22); z = c.layer + 100;
+                isLocked = pyramid.some(other => other.layer > c.layer && (other.r === c.r || other.r === c.r + 1) && (other.c === c.c || other.c === c.c + 1));
+            } else if (currentFormation === 4) {
+                let offset = (c.layer) * 90; x = 300 - (offset/2) + (c.c*90) - 38; y = 100 - (c.layer*35) + (c.r*90); z = c.layer;
+                isLocked = pyramid.some(other => other.layer === c.layer+1 && (other.r === c.r || other.r === c.r+1) && (other.c === c.c || other.c === c.c+1));
+            } else {
+                if(c.type === 'core') {
+                    x = 300 - 45 + (c.c*90) - 38; y = 220 + (c.r*90); z = 0;
+                    isLocked = pyramid.some(other => other.type === 'wing');
+                } else {
+                    let rowW = c.row*78; x = 300 + (c.side*190) - (rowW/2) + (c.col*78) - 38; y = 80 + c.row*58; z = 1;
+                    isLocked = pyramid.some(other => other.type === 'wing' && other.side === c.side && other.row === c.row+1 && (other.col === c.col || other.col === c.col+1));
+                }
+            }
+            stage.appendChild(createCardUI(c, x, y, true, isLocked, z));
+        });
+        const wElem = document.getElementById('waste'); wElem.innerHTML = '';
+        if (waste.length > 0) wElem.appendChild(createCardUI(waste[waste.length-1], 0, 0, false, false, 500));
+        document.getElementById('stock').style.background = stock.length > 0 ? 'var(--card-back-bg)' : 'transparent';
+        document.getElementById('stock').style.backgroundImage = stock.length > 0 ? `repeating-linear-gradient(45deg, var(--stripe-color) 0, var(--stripe-color) 12px, transparent 12px, transparent 24px)` : 'none';
+        document.getElementById('cycles').innerText = cyclesLeft;
+        document.getElementById('rem').innerText = pyramid.length;
+        resizeGame();
+    }
+
+    function selectCard(card, el, isBack) {
+        if (isBack) return;
+        if (!selectedNext) { selectedNext = { card, el }; el.classList.add('selected'); }
+        else {
+            if (selectedNext.el === el) { el.classList.remove('selected'); selectedNext = null; return; }
+            let success = (selectedNext.card.val === 13 && card.val === 13) || (selectedNext.card.val + card.val === 13);
+            if (success) {
+                let ids = [card.id, selectedNext.card.id];
+                pyramid = pyramid.filter(p => !ids.includes(p.id));
+                if (waste.length > 0 && ids.includes(waste[waste.length-1].id)) waste.pop();
+                document.getElementById('msg').innerText = "殲滅成功！";
+            } else {
+                document.getElementById('msg').innerText = "軍令不符！";
+                selectedNext.el.classList.remove('selected');
+            }
+            selectedNext = null; render();
+        }
+    }
+    function drawCard() {
+        if (stock.length > 0) { let c = stock.pop(); c.id = "w-" + Date.now(); waste.push(c); }
+        else if (cyclesLeft > 1) { stock = waste.reverse(); waste = []; cyclesLeft--; }
+        if (selectedNext) selectedNext = null; render();
+    }
+    resetGame();
+</script>
+</body>
+</html>
